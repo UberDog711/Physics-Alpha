@@ -4,29 +4,26 @@ import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
 import java.nio.*;
+import java.util.ArrayList;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL33.*;
 import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 
 public class Main {
-
+    private ArrayList<Chunk> chunks = new ArrayList<>();
+    public static int CHUNK_SIZE = 128; // smaller for testing; increase later
+    public static int RENDER_DISTANCE = 10;
     private long window;
     private int shaderProgram;
-    
-    private int vao;
-    
-
     private Camera camera;
     private Matrix4 projection;
-
-    private final int WIDTH = 2560;
-    private final int HEIGHT = 1440;
+    private final int WIDTH = 1920;
+    private final int HEIGHT = 1080;
     private double lastTime = glfwGetTime();
     private int nbFrames = 1;
     private double lastMouseX, lastMouseY;
@@ -66,40 +63,34 @@ public class Main {
 
         GL.createCapabilities();
 
-        // Load main shader
+        // load shader once (must match attribute/uniform names used in Chunk)
         shaderProgram = ShaderUtils.loadShader("shaders/vertex.glsl", "shaders/fragment.glsl");
-        
 
+        // Make Chunks (pass shaderProgram to each)
+        double tot = (RENDER_DISTANCE*2+1) * (RENDER_DISTANCE * 2+1);
+        double cur = 0;
 
-        // Setup triangle VAO/VBO
-        float[] vertices = {
-            -5.0f, -5.0f, 0.0f,
-             5.0f, -5.0f, 0.0f,
-            -5.0f,  5.0f, 0.0f,
-            -5.0f,  5.0f, 0.0f,
-             5.0f, -5.0f, 0.0f,
-             5.0f,  5.0f, 0.0f
-        };
-        vao = glGenVertexArrays();
-        int vbo = glGenBuffers();
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        FloatBuffer vb = BufferUtils.createFloatBuffer(vertices.length);
-        vb.put(vertices).flip();
-        glBufferData(GL_ARRAY_BUFFER, vb, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * Float.BYTES, 0);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
+        for (int cx = -RENDER_DISTANCE; cx <= RENDER_DISTANCE; cx++) {
+            for (int cz = -RENDER_DISTANCE; cz <= RENDER_DISTANCE; cz++) {
+                // place chunks in world coordinates (cx*CHUNK_SIZE, cz*CHUNK_SIZE)
+                Chunk chunk = new Chunk(cx * CHUNK_SIZE, cz * CHUNK_SIZE, shaderProgram);
+                chunk.create_world();
+                chunks.add(chunk);
 
-    
+                cur ++;
+                System.out.println(cur/tot*100);
+            }
+        }
 
-
-        // Setup camera and projection
-        camera = new Camera(new Vector3(0, 0, 3));
-        projection = Matrix4.perspective((float)Math.toRadians(60), (float)WIDTH/HEIGHT, 0.1f, 100f);
+        // Setup camera near center of generated chunks
+        // Place camera above center of chunks so terrain is visible immediately
+        float worldCenterX = 0f + (RENDER_DISTANCE * CHUNK_SIZE);
+        float worldCenterZ = 0f + (RENDER_DISTANCE * CHUNK_SIZE);
+        camera = new Camera(new Vector3(worldCenterX, 30f, worldCenterZ + 10f)); // tweak as needed
+        projection = Matrix4.perspective((float)Math.toRadians(60), (float)WIDTH/HEIGHT, 0.1f, 1000f);
 
         glEnable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE); // disable culling while testing; enable later if winding is correct
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
         glfwSetCursorPosCallback(window, (w, xpos, ypos) -> {
@@ -128,6 +119,8 @@ public class Main {
             glfwPollEvents();
             processInput();
 
+            // Use shader and set uniforms once per frame
+            glUseProgram(shaderProgram);
             int viewLoc = glGetUniformLocation(shaderProgram, "view");
             int projLoc = glGetUniformLocation(shaderProgram, "projection");
 
@@ -139,25 +132,25 @@ public class Main {
                 glUniformMatrix4fv(projLoc, false, fb);
             }
 
-            glClearColor(0.1f,0.1f,0.1f,1.0f);
+            glClearColor(0.53f, 0.8f, 0.92f, 1.0f); // light sky
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            
-            // Draw triangle wall
-            glUseProgram(shaderProgram);
-            glBindVertexArray(vao);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-            glBindVertexArray(0);
+            // render all chunks (they rely on the program & uniforms already set)
+            for (Chunk chunk : chunks) {
+                chunk.render();
+            }
 
             glfwSwapBuffers(window);
         }
     }
 
     private void processInput() {
-        float speed = 10.0f * deltaTime;
+        float speed = 50.0f * deltaTime; // adjust
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.moveForward(speed);
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.moveBackward(speed);
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.moveLeft(speed);
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.moveRight(speed);
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) camera.moveUp(speed);
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) camera.moveDown(speed);
     }
 }
