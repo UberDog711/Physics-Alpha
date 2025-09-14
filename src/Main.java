@@ -17,13 +17,13 @@ import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 public class Main {
     private ArrayList<Chunk> chunks = new ArrayList<>();
     public static int CHUNK_SIZE = 128; // smaller for testing; increase later
-    public static int RENDER_DISTANCE = 10;
+    public static int RENDER_DISTANCE = 8;
     private long window;
     private int shaderProgram;
     private Camera camera;
     private Matrix4 projection;
-    private final int WIDTH = 1920;
-    private final int HEIGHT = 1080;
+    private final int WIDTH = 3840;
+    private final int HEIGHT = 2160;
     private double lastTime = glfwGetTime();
     private int nbFrames = 1;
     private double lastMouseX, lastMouseY;
@@ -31,7 +31,7 @@ public class Main {
     private float mouseSensitivity = 0.15f;
     private double lastFrameTime = glfwGetTime();
     private float deltaTime = 0f;
-
+    private float og_speed = 50.0f;
     public static void main(String[] args) {
         new Main().run();
     }
@@ -87,7 +87,7 @@ public class Main {
         float worldCenterX = 0f + (RENDER_DISTANCE * CHUNK_SIZE);
         float worldCenterZ = 0f + (RENDER_DISTANCE * CHUNK_SIZE);
         camera = new Camera(new Vector3(worldCenterX, 30f, worldCenterZ + 10f)); // tweak as needed
-        projection = Matrix4.perspective((float)Math.toRadians(60), (float)WIDTH/HEIGHT, 0.1f, 1000f);
+        projection = Matrix4.perspective((float)Math.toRadians(100), (float)WIDTH/HEIGHT, 0.1f, 4800f);
 
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE); // disable culling while testing; enable later if winding is correct
@@ -145,7 +145,10 @@ public class Main {
     }
 
     private void processInput() {
-        float speed = 50.0f * deltaTime; // adjust
+        
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) og_speed+=1.0f;
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) og_speed-=1.0f;
+        float speed = og_speed * deltaTime; // adjust
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.moveForward(speed);
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.moveBackward(speed);
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.moveLeft(speed);
