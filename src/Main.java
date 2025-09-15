@@ -30,7 +30,7 @@ public class Main {
     private double lastTime = glfwGetTime();
     private double lastFrameTime = glfwGetTime();
     private int nbFrames = 1;
-    private float deltaTime = 0f;
+    private float deltaTime = 0;
 
     // Mouse
     private double lastMouseX, lastMouseY;
@@ -40,6 +40,13 @@ public class Main {
 
     // Data
     private float[] fps_data;
+
+    // Object
+    private Object test;
+    private Shader shader;
+    
+
+
     public static void main(String[] args) {
         new Main().run();
     }
@@ -71,8 +78,8 @@ public class Main {
         glfwShowWindow(window);
 
         GL.createCapabilities();
-        //Shader
-        shaderProgram = ShaderUtils.loadShader("shaders/vertex.glsl", "shaders/fragment.glsl");
+        
+        
 
 
         // Setup Camera
@@ -89,6 +96,8 @@ public class Main {
             lastMouseY = ypos;
             camera.addMouseDelta(dx, dy, mouseSensitivity);
         });
+        test = new Object(2);
+        shader = new Shader("cube.vert","cube.frag");
     }
 
     private void loop() {
@@ -103,25 +112,29 @@ public class Main {
 
             glfwPollEvents();
             processInput();
-            
-
-            // Use Shader
-            glUseProgram(shaderProgram);
-            int viewLoc = glGetUniformLocation(shaderProgram, "view");
-            int projLoc = glGetUniformLocation(shaderProgram, "projection");
-
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                FloatBuffer fb = stack.mallocFloat(16);
-                camera.getViewMatrix().get(fb);
-                glUniformMatrix4fv(viewLoc, false, fb);
-                projection.get(fb);
-                glUniformMatrix4fv(projLoc, false, fb);
-            }
-            // Render
-            glClearColor(0.53f, 0.8f, 0.92f, 1.0f); // light sky
+            glEnable(GL_DEPTH_TEST);
+            glClearColor(0.53f, 0.8f, 0.92f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    
+            // Use Shader
+            shader.bind();
+
+            // Create a model matrix (cube at origin)
+            Matrix4 model = new Matrix4().identity();
+            shader.setUniformMat4f("model", model);
+
+            // Set view & projection
+            shader.setUniformMat4f("view", camera.getViewMatrix());
+            shader.setUniformMat4f("projection", projection);
+
+            // Render the cube
+            test.Render();
+
+            shader.unbind();
+
+
+
+
 
             glfwSwapBuffers(window);
         } 
