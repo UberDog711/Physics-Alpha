@@ -76,7 +76,7 @@ public class Main {
 
 
         // Setup Camera
-        camera = new Camera(new Vector3(0, 30f, 0 + 10f)); // tweak as needed
+        camera = new Camera(new Vector3f(0, 30f, 0 + 10f)); // tweak as needed
         projection = Matrix4.perspective((float)Math.toRadians(100), (float)WIDTH/HEIGHT, 0.1f, 4800f);
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE); // disable culling while testing; enable later if winding is correct

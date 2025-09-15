@@ -91,10 +91,10 @@ public class Matrix4 {
         return mat;
     }
 
-    public static Matrix4 lookAt(Vector3 eye, Vector3 center, Vector3 up) {
-        Vector3 f = center.sub(eye).normalize();
-        Vector3 s = f.cross(up).normalize();
-        Vector3 u = s.cross(f);
+    public static Matrix4 lookAt(Vector3f eye, Vector3f center, Vector3f up) {
+        Vector3f f = center.sub(eye).normalize();
+        Vector3f s = f.cross(up).normalize();
+        Vector3f u = s.cross(f);
 
         Matrix4 mat = new Matrix4().identity();
 

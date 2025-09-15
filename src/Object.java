@@ -1,5 +1,5 @@
 import java.util.Vector;
-
+@SuppressWarnings("unused")
 public class Object {
     //Identifiers
     private String name;
