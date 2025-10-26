@@ -1,5 +1,6 @@
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
+import java.nio.IntBuffer;
 
 import java.util.*;
 import java.nio.FloatBuffer;
@@ -29,11 +30,13 @@ public class Object {
     private float size;
 
     //Render Properties
-        private int vao;
-        private int vbo;
-        private int ebo;
-        private int indexCount;
-    public Object (float size2) {
+    private int vao;
+    private int vbo;
+    private int ebo;
+    private int indexCount;
+    
+
+    public Object(float size2) {
         this.size = size2;
         float h = size / 2.0f;
 
@@ -94,40 +97,45 @@ public class Object {
 
         glBindVertexArray(vao);
 
+        // Convert to FloatBuffer
+        FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices.length);
+        vertexBuffer.put(vertices).flip();
+
         // VBO
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
+
+        // Convert to IntBuffer
+        IntBuffer indexBuffer = BufferUtils.createIntBuffer(indices.length);
+        indexBuffer.put(indices).flip();
 
         // EBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
 
         int stride = 8 * Float.BYTES;
         // position attribute
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, 0L);
         glEnableVertexAttribArray(0);
         // normal attribute
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, 3 * Float.BYTES);
+        glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, 3L * Float.BYTES);
         glEnableVertexAttribArray(1);
         // texcoord attribute
-        glVertexAttribPointer(2, 2, GL_FLOAT, false, stride, 6 * Float.BYTES);
+        glVertexAttribPointer(2, 2, GL_FLOAT, false, stride, 6L * Float.BYTES);
         glEnableVertexAttribArray(2);
 
         glBindVertexArray(0);
     }
-        
-    public void Render () {
+
+    public void Render() {
         glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0L);
         glBindVertexArray(0);
     }
+
     public void cleanup() {
         glDeleteBuffers(vbo);
         glDeleteBuffers(ebo);
         glDeleteVertexArrays(vao);
     }
-
-    
-
-    
 }
